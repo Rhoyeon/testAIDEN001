@@ -1,5 +1,6 @@
 """Task and TaskStep models."""
 
+from __future__ import annotations
 import uuid
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text

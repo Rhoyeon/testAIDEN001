@@ -1,5 +1,6 @@
 """HITL Review and ReviewDecision models."""
 
+from __future__ import annotations
 import uuid
 
 from sqlalchemy import DateTime, ForeignKey, String, Text

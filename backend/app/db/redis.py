@@ -1,5 +1,6 @@
 """Redis connection management."""
 
+from __future__ import annotations
 import redis.asyncio as aioredis
 
 from app.config import settings

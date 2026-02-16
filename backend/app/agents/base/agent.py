@@ -1,5 +1,6 @@
 """Base agent abstract class - core of the AIDEN agent framework."""
 
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Type
 

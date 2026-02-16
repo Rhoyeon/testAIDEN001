@@ -1,5 +1,6 @@
 """Multi-LLM provider factory with unified interface."""
 
+from __future__ import annotations
 from typing import Any, Dict
 
 from langchain_core.language_models import BaseChatModel

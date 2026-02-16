@@ -1,5 +1,6 @@
 """Base state definitions and utilities shared across all agents."""
 
+from __future__ import annotations
 from typing import Annotated, Any, TypedDict
 
 from langgraph.graph import add_messages

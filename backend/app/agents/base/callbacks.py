@@ -1,5 +1,6 @@
 """Agent lifecycle callbacks for event emission and logging."""
 
+from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 

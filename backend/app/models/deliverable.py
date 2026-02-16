@@ -1,5 +1,6 @@
 """Deliverable and DeliverableVersion models."""
 
+from __future__ import annotations
 import uuid
 
 from sqlalchemy import ForeignKey, Integer, String, Text

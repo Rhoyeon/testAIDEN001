@@ -1,5 +1,6 @@
 """Document and DocumentChunk models."""
 
+from __future__ import annotations
 import uuid
 
 from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text

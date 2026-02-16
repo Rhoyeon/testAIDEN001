@@ -1,5 +1,6 @@
 """AgentExecution and AgentLog models."""
 
+from __future__ import annotations
 import uuid
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text

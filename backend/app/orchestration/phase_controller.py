@@ -1,5 +1,6 @@
 """Phase transition controller - manages the flow between development phases."""
 
+from __future__ import annotations
 from typing import List
 
 from app.core.logging import get_logger

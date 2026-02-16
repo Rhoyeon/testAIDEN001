@@ -1,5 +1,6 @@
 """Embedding generation for RAG pipeline."""
 
+from __future__ import annotations
 from langchain_openai import OpenAIEmbeddings
 
 from app.config import settings

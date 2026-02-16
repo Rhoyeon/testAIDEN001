@@ -1,5 +1,6 @@
 """RAG pipeline orchestrator - manages document ingestion and retrieval."""
 
+from __future__ import annotations
 from typing import Any, Dict, List
 
 from app.core.exceptions import DocumentProcessingError, RAGPipelineError

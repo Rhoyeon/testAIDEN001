@@ -1,5 +1,6 @@
 """Event type definitions for the AIDEN orchestration system."""
 
+from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any

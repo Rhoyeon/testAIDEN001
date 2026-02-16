@@ -4,6 +4,7 @@ The engine manages the lifecycle of projects, phases, and agent executions.
 It dispatches agents, handles phase transitions, and coordinates HITL reviews.
 """
 
+from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
