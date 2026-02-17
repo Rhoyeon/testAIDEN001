@@ -71,6 +71,9 @@ select = ["E", "F", "W", "I", "N", "UP"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
+[tool.setuptools.packages.find]
+include = ["app*"]
+
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
