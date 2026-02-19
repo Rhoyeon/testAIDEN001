@@ -28,6 +28,9 @@ async def create_project(data: ProjectCreate, db: DBSession, user_id: CurrentUse
     """Create a new project with default phases."""
     service = ProjectService(db)
     project = await service.create_project(data, owner_id=user_id)
+    await db.flush()
+    # Re-fetch with selectinload to eagerly load phases for serialization
+    project = await service.get_project(project.id)
     return SuccessResponse(data=ProjectDetailResponse.model_validate(project))
 
 
@@ -59,7 +62,9 @@ async def get_project(project_id: UUID, db: DBSession):
 async def update_project(project_id: UUID, data: ProjectUpdate, db: DBSession):
     """Update project details."""
     service = ProjectService(db)
-    project = await service.update_project(project_id, data)
+    await service.update_project(project_id, data)
+    # Re-fetch with selectinload to eagerly load phases for serialization
+    project = await service.get_project(project_id)
     return SuccessResponse(data=ProjectDetailResponse.model_validate(project))
 
 
