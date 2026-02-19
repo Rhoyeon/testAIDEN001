@@ -4,10 +4,10 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import JSONB_COMPAT as JSONB, Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Deliverable(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -42,3 +42,6 @@ class DeliverableVersion(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     content_structured: Mapped[dict | None] = mapped_column(JSONB)
     change_summary: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[str | None] = mapped_column(String(50))
+
+    # Relationships
+    deliverable = relationship("Deliverable", back_populates="versions")

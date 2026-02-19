@@ -4,7 +4,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.dependencies import CurrentUserID, DBSession
+from app.dependencies import (
+    CurrentUserID,
+    DBSession,
+    EventBusDep,
+    LLMProviderDep,
+    RAGPipelineDep,
+)
 from app.schemas.common import PaginatedResponse, SuccessResponse
 from app.schemas.project import (
     ProjectCreate,
@@ -66,8 +72,23 @@ async def delete_project(project_id: UUID, db: DBSession):
 
 
 @router.post("/{project_id}/start", response_model=SuccessResponse[ProjectDetailResponse])
-async def start_project(project_id: UUID, db: DBSession):
-    """Start the project workflow (begins analysis phase)."""
+async def start_project(
+    project_id: UUID,
+    db: DBSession,
+    llm: LLMProviderDep,
+    rag: RAGPipelineDep,
+    bus: EventBusDep,
+):
+    """Start the project workflow via the OrchestrationEngine.
+
+    This triggers the analysis phase, dispatching the Ryan agent
+    to process uploaded documents and generate requirements.
+    """
+    from app.orchestration.engine import OrchestrationEngine
+
+    engine = OrchestrationEngine(db, llm, rag, bus)
+    await engine.start_project(str(project_id))
+
     service = ProjectService(db)
-    project = await service.start_project(project_id)
+    project = await service.get_project(project_id)
     return SuccessResponse(data=ProjectDetailResponse.model_validate(project))

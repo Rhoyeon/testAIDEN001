@@ -19,10 +19,21 @@ class ChromaVectorStore:
 
     def __init__(self, embedder: Embedder):
         self.embedder = embedder
-        self._client = chromadb.HttpClient(
-            host=settings.chroma_host,
-            port=settings.chroma_port,
-        )
+        if settings.use_sqlite:
+            # Use local persistent ChromaDB (no server needed)
+            import os
+            persist_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "chroma",
+            )
+            os.makedirs(persist_dir, exist_ok=True)
+            self._client = chromadb.PersistentClient(path=persist_dir)
+            logger.info(f"Using local persistent ChromaDB at {persist_dir}")
+        else:
+            self._client = chromadb.HttpClient(
+                host=settings.chroma_host,
+                port=settings.chroma_port,
+            )
 
     def _get_collection_name(self, project_id: str) -> str:
         """Generate a collection name for a project."""

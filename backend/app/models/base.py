@@ -3,9 +3,13 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import JSON, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# Cross-dialect JSON type: uses JSONB on PostgreSQL, JSON/TEXT on SQLite
+# Import this from base.py instead of importing JSONB from postgresql dialect
+JSONB_COMPAT = JSON
 
 
 class Base(DeclarativeBase):

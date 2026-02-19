@@ -14,8 +14,8 @@ from app.models.base import Base
 # Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url with the async URL converted to sync for Alembic
-config.set_main_option("sqlalchemy.url", settings.database_sync_url)
+# Override sqlalchemy.url with the effective sync URL (SQLite or PostgreSQL)
+config.set_main_option("sqlalchemy.url", settings.effective_database_sync_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -63,9 +63,23 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
+def run_migrations_online_sync() -> None:
+    """Run migrations in sync mode (for SQLite)."""
+    from sqlalchemy import create_engine
+    url = config.get_main_option("sqlalchemy.url")
+    connectable = create_engine(url, poolclass=pool.NullPool)
+    with connectable.connect() as connection:
+        do_run_migrations(connection)
+    connectable.dispose()
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    asyncio.run(run_async_migrations())
+    url = config.get_main_option("sqlalchemy.url")
+    if url and url.startswith("sqlite"):
+        run_migrations_online_sync()
+    else:
+        asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

@@ -1,14 +1,30 @@
 """Application configuration using pydantic-settings."""
 
+from __future__ import annotations
+
+import os
 from typing import List
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _find_env_file() -> str:
+    """Find .env file in current dir or project root."""
+    # Check current directory first
+    if os.path.exists(".env"):
+        return ".env"
+    # Check project root (backend's parent directory)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    env_path = os.path.join(project_root, ".env")
+    if os.path.exists(env_path):
+        return env_path
+    return ".env"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_find_env_file(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -21,6 +37,9 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     api_v1_prefix: str = "/api/v1"
 
+    # Dev mode: use SQLite + in-memory when Docker services are unavailable
+    use_sqlite: bool = Field(default=False, description="Use SQLite instead of PostgreSQL for development")
+
     # Database
     database_url: str = "postgresql+asyncpg://aiden:aiden_dev_password@localhost:5432/aiden"
     database_sync_url: str = "postgresql://aiden:aiden_dev_password@localhost:5432/aiden"
@@ -32,7 +51,7 @@ class Settings(BaseSettings):
 
     # ChromaDB
     chroma_host: str = "localhost"
-    chroma_port: int = 8000
+    chroma_port: int = 8100
 
     # LLM Providers
     openai_api_key: str = ""
@@ -70,6 +89,24 @@ class Settings(BaseSettings):
     @property
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def effective_database_url(self) -> str:
+        """Return SQLite URL when use_sqlite is enabled, else PostgreSQL."""
+        if self.use_sqlite:
+            db_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+            os.makedirs(db_dir, exist_ok=True)
+            return f"sqlite+aiosqlite:///{db_dir}/aiden_dev.db"
+        return self.database_url
+
+    @property
+    def effective_database_sync_url(self) -> str:
+        """Return sync SQLite URL when use_sqlite is enabled, else PostgreSQL."""
+        if self.use_sqlite:
+            db_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+            os.makedirs(db_dir, exist_ok=True)
+            return f"sqlite:///{db_dir}/aiden_dev.db"
+        return self.database_sync_url
 
 
 settings = Settings()

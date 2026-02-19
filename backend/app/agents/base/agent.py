@@ -4,7 +4,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Type
 
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import StateGraph
 
 from app.config import settings
@@ -65,14 +64,23 @@ class BaseAgent(ABC):
         return []
 
     async def compile(self) -> Any:
-        """Compile the LangGraph with PostgreSQL checkpointer for durability."""
+        """Compile the LangGraph with appropriate checkpointer.
+
+        Uses MemorySaver in SQLite dev mode, AsyncPostgresSaver in production.
+        """
         builder = StateGraph(self.get_state_class())
         builder = self.build_graph(builder)
 
         interrupt_nodes = self.get_interrupt_nodes()
 
-        checkpointer = AsyncPostgresSaver.from_conn_string(settings.database_url)
-        await checkpointer.setup()
+        if settings.use_sqlite:
+            from langgraph.checkpoint.memory import MemorySaver
+            checkpointer = MemorySaver()
+            logger.info(f"[DEV] Using MemorySaver for agent '{self.agent_name}'")
+        else:
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            checkpointer = AsyncPostgresSaver.from_conn_string(settings.database_url)
+            await checkpointer.setup()
 
         self._compiled_graph = builder.compile(
             checkpointer=checkpointer,

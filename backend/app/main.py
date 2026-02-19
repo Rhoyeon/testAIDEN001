@@ -14,19 +14,27 @@ async def lifespan(app: FastAPI):
     # Startup
     from app.db.session import init_db
     from app.db.redis import init_redis, close_redis
+    from app.llm.provider import LLMProvider
+    from app.rag.pipeline import RAGPipeline
+    from app.orchestration.event_bus import EventBus
 
     try:
         await init_db()
     except Exception as e:
         print(f"Warning: Database initialization failed: {e}")
-    
+
     try:
         await init_redis()
     except Exception as e:
         print(f"Warning: Redis initialization failed: {e}")
-    
+
+    # Create application-scoped service singletons
+    app.state.llm_provider = LLMProvider()
+    app.state.rag_pipeline = RAGPipeline()
+    app.state.event_bus = EventBus()
+
     yield
-    
+
     # Shutdown
     try:
         await close_redis()
@@ -61,7 +69,36 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health_check():
-        return {"status": "healthy", "service": settings.app_name}
+        from sqlalchemy import text
+        from app.db.session import engine
+        from app.db.redis import redis_client
+
+        checks: dict = {"service": settings.app_name}
+
+        # Database connectivity check
+        try:
+            from sqlalchemy.ext.asyncio import AsyncSession
+            async with AsyncSession(engine) as session:
+                await session.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception:
+            checks["database"] = "error"
+
+        # Redis connectivity check
+        try:
+            if redis_client:
+                await redis_client.ping()
+                checks["redis"] = "ok"
+            else:
+                checks["redis"] = "not_initialized"
+        except Exception:
+            checks["redis"] = "error"
+
+        all_ok = all(
+            v == "ok" for k, v in checks.items() if k not in ("service", "status")
+        )
+        checks["status"] = "healthy" if all_ok else "degraded"
+        return checks
 
     return app
 

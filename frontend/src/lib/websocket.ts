@@ -75,7 +75,7 @@ export class WebSocketManager {
         this.baseUrl = `${wsProtocol}//${window.location.host}/api/v1`;
       }
     } else {
-      this.baseUrl = "ws://localhost:8000/api/v1";
+      this.baseUrl = "ws://127.0.0.1:8000/api/v1";
     }
   }
 

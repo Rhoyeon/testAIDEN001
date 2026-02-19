@@ -49,6 +49,9 @@ chroma_data/
 # Uploads
 uploads/
 
+# SQLite dev database and local ChromaDB
+backend/data/
+
 # Logs
 *.log
 logs/

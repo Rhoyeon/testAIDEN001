@@ -4,10 +4,10 @@ from __future__ import annotations
 import uuid
 
 from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import JSONB_COMPAT as JSONB, Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class Document(Base, UUIDPrimaryKeyMixin, TimestampMixin):

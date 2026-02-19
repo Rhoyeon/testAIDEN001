@@ -5,12 +5,14 @@ from uuid import UUID
 from fastapi import APIRouter, File, Form, UploadFile
 
 from app.config import settings
+from app.core.logging import get_logger
 from app.dependencies import CurrentUserID, DBSession
 from app.schemas.common import SuccessResponse
 from app.schemas.document import DocumentResponse, DocumentUploadResponse
 from app.services.document_service import DocumentService
 
 router = APIRouter()
+logger = get_logger("api.documents")
 
 
 @router.post("/projects/{project_id}/upload", response_model=SuccessResponse[DocumentUploadResponse])
@@ -22,7 +24,7 @@ async def upload_document(
     title: str = Form(...),
     doc_type: str = Form(default="dev_request"),
 ):
-    """Upload a document to a project."""
+    """Upload a document to a project and ingest into RAG pipeline."""
     # Validate file size
     content = await file.read()
     if len(content) > settings.max_upload_size_bytes:
@@ -38,6 +40,26 @@ async def upload_document(
         mime_type=file.content_type or "application/octet-stream",
         uploaded_by=user_id,
     )
+
+    # RAG ingestion - index document for agent retrieval
+    try:
+        from app.rag.pipeline import RAGPipeline
+        rag = RAGPipeline()
+        ingest_result = await rag.ingest_document(
+            document_id=str(document.id),
+            project_id=str(project_id),
+            file_path=document.file_path,
+            mime_type=document.mime_type,
+            doc_type=document.doc_type,
+        )
+        await service.mark_indexed(document.id, ingest_result.get("content_text"))
+        logger.info(
+            f"Document indexed: {document.id} "
+            f"({ingest_result.get('chunk_count', 0)} chunks)"
+        )
+    except Exception as e:
+        logger.warning(f"RAG ingestion failed for document {document.id}: {e}")
+
     return SuccessResponse(data=DocumentUploadResponse.model_validate(document))
 
 
