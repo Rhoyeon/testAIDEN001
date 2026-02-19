@@ -14,9 +14,6 @@ async def lifespan(app: FastAPI):
     # Startup
     from app.db.session import init_db
     from app.db.redis import init_redis, close_redis
-    from app.llm.provider import LLMProvider
-    from app.rag.pipeline import RAGPipeline
-    from app.orchestration.event_bus import EventBus
 
     try:
         await init_db()
@@ -29,9 +26,25 @@ async def lifespan(app: FastAPI):
         print(f"Warning: Redis initialization failed: {e}")
 
     # Create application-scoped service singletons
+    from app.llm.provider import LLMProvider
+    from app.orchestration.event_bus import EventBus
+
     app.state.llm_provider = LLMProvider()
-    app.state.rag_pipeline = RAGPipeline()
     app.state.event_bus = EventBus()
+
+    # RAGPipeline is created lazily to avoid ChromaDB blocking the event loop
+    # during startup (PersistentClient can stall inside uvicorn's lifespan)
+    app.state._rag_pipeline = None
+
+    class _LazyRAG:
+        """Proxy that creates RAGPipeline on first access."""
+        def __getattr__(self, name):
+            if app.state._rag_pipeline is None:
+                from app.rag.pipeline import RAGPipeline
+                app.state._rag_pipeline = RAGPipeline()
+            return getattr(app.state._rag_pipeline, name)
+
+    app.state.rag_pipeline = _LazyRAG()
 
     yield
 
