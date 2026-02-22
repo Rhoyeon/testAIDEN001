@@ -40,6 +40,7 @@ export default function ProjectDetailPage() {
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
   const [deliverables, setDeliverables] = useState<DeliverableResponse[]>([]);
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     if (!projectId) return;
@@ -92,12 +93,15 @@ export default function ProjectDetailPage() {
 
   const handleStart = async () => {
     setStarting(true);
+    setStartError(null);
     try {
       await startProject(projectId);
       const updatedPhases = await phasesApi.list(projectId);
       setPhases(updatedPhases);
       // Refetch project to get updated status
       await fetchProject(projectId);
+    } catch (err) {
+      setStartError((err as Error).message || "Failed to start project");
     } finally {
       setStarting(false);
     }
@@ -180,6 +184,11 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+      {startError && (
+        <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <strong>Error:</strong> {startError}
+        </div>
+      )}
 
       {/* Phase Stepper */}
       {phases.length > 0 && (

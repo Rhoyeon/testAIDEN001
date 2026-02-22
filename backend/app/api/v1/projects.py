@@ -94,6 +94,7 @@ async def start_project(
     engine = OrchestrationEngine(db, llm, rag, bus)
     await engine.start_project(str(project_id))
 
+    # Re-fetch with selectinload so phases are eagerly loaded
     service = ProjectService(db)
     project = await service.get_project(project_id)
     return SuccessResponse(data=ProjectDetailResponse.model_validate(project))

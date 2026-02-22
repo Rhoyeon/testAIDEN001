@@ -2,10 +2,12 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.core.exceptions import AIDENException
 
 
 @asynccontextmanager
@@ -74,6 +76,31 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Global exception handler for AIDEN custom exceptions
+    @app.exception_handler(AIDENException)
+    async def aiden_exception_handler(request: Request, exc: AIDENException):
+        status_map = {
+            "NOT_FOUND": 404,
+            "VALIDATION_ERROR": 422,
+            "AGENT_EXECUTION_FAILED": 502,
+            "LLM_PROVIDER_ERROR": 502,
+            "RAG_PIPELINE_ERROR": 502,
+            "DOCUMENT_PROCESSING_ERROR": 422,
+            "HITL_TIMEOUT": 408,
+        }
+        status_code = status_map.get(exc.code, 500)
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "details": exc.details,
+                },
+            },
+        )
 
     # Register API routers
     from app.api.v1.router import api_v1_router
