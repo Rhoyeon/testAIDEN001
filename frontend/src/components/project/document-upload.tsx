@@ -23,7 +23,25 @@ const ACCEPTED_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/msword",
   "text/plain",
+  "text/csv",
+  "text/markdown",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "application/json",
+  "application/x-hwp",
+  "application/haansofthwp",
 ];
+
+const ACCEPTED_EXTENSIONS = [
+  ".pdf", ".docx", ".doc", ".txt", ".csv", ".md",
+  ".xlsx", ".xls", ".json", ".hwp", ".hwpx",
+];
+
+function isAcceptedFile(f: File): boolean {
+  if (ACCEPTED_TYPES.includes(f.type)) return true;
+  const name = f.name.toLowerCase();
+  return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
 
 export function DocumentUpload({ projectId, onUploadComplete, className }: DocumentUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
@@ -32,7 +50,7 @@ export function DocumentUpload({ projectId, onUploadComplete, className }: Docum
   const addFiles = useCallback((newFiles: FileList | null) => {
     if (!newFiles) return;
     const filtered = Array.from(newFiles)
-      .filter((f) => ACCEPTED_TYPES.includes(f.type) || f.name.endsWith(".txt"))
+      .filter(isAcceptedFile)
       .map((file) => ({ file, status: "pending" as const }));
     setFiles((prev) => [...prev, ...filtered]);
   }, []);
@@ -84,12 +102,12 @@ export function DocumentUpload({ projectId, onUploadComplete, className }: Docum
         <p className="mt-3 text-sm font-medium text-gray-700">
           Drag & drop files here
         </p>
-        <p className="mt-1 text-xs text-gray-500">PDF, DOCX, TXT supported</p>
+        <p className="mt-1 text-xs text-gray-500">PDF, DOCX, TXT, HWP, XLSX, CSV, MD, JSON</p>
         <label className="mt-4">
           <input
             type="file"
             multiple
-            accept=".pdf,.docx,.doc,.txt"
+            accept={ACCEPTED_EXTENSIONS.join(",")}
             className="hidden"
             onChange={(e) => addFiles(e.target.files)}
           />
@@ -117,7 +135,10 @@ export function DocumentUpload({ projectId, onUploadComplete, className }: Docum
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 )}
                 {f.status === "error" && (
-                  <span title={f.error}><AlertCircle className="h-4 w-4 text-red-500" /></span>
+                  <span className="flex items-center gap-1 text-xs text-red-500">
+                    <AlertCircle className="h-4 w-4" />
+                    {f.error ?? "Upload failed"}
+                  </span>
                 )}
                 {f.status === "uploading" && (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-aiden-500" />

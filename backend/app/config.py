@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 1440
 
     # CORS
-    cors_origins: List[str] = Field(default=["http://localhost:3000"])
+    cors_origins: List[str] = Field(default=["http://localhost:3000", "http://127.0.0.1:3000"])
 
     # File Storage
     upload_dir: str = "./uploads"

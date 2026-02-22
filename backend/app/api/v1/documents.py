@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 
 from app.config import settings
 from app.core.logging import get_logger
@@ -18,6 +18,7 @@ logger = get_logger("api.documents")
 @router.post("/projects/{project_id}/upload", response_model=SuccessResponse[DocumentUploadResponse])
 async def upload_document(
     project_id: UUID,
+    request: Request,
     db: DBSession,
     user_id: CurrentUserID,
     file: UploadFile = File(...),
@@ -28,7 +29,10 @@ async def upload_document(
     # Validate file size
     content = await file.read()
     if len(content) > settings.max_upload_size_bytes:
-        raise ValueError(f"File size exceeds maximum of {settings.max_upload_size_mb}MB")
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size exceeds maximum of {settings.max_upload_size_mb}MB",
+        )
 
     service = DocumentService(db)
     document = await service.upload_document(
@@ -41,10 +45,9 @@ async def upload_document(
         uploaded_by=user_id,
     )
 
-    # RAG ingestion - index document for agent retrieval
+    # RAG ingestion - index document for agent retrieval (non-blocking)
     try:
-        from app.rag.pipeline import RAGPipeline
-        rag = RAGPipeline()
+        rag = request.app.state.rag_pipeline
         ingest_result = await rag.ingest_document(
             document_id=str(document.id),
             project_id=str(project_id),
